@@ -749,6 +749,54 @@ button.pm-t[aria-pressed="true"]{border-color:var(--primary);box-shadow:0 0 0 3p
 .mk .bcol:hover .bar{opacity:1}
 .mk .bcol.sel .bar{background:var(--accent);opacity:1}
 .mk .bar{transition:background .15s}
+
+/* responsive hardening */
+.frow,.frow>*,.fv{min-width:0}
+.mini{table-layout:fixed}
+.mini th,.mini td{overflow-wrap:anywhere}
+@media (max-width:900px){.wrap:has(>.frow){grid-template-columns:minmax(0,1fr)}}
+@media (max-width:480px){
+  .curbox{padding:20px}.curbox .big{font-size:1.9rem}
+  .mini th,.mini td{padding:10px}
+  .frow,.frow:last-child{padding:20px}
+  .seg button{padding:6px 10px}
+}
+img,svg,video{max-width:100%}
+
+/* touch + tall-viewport polish */
+.dash{min-height:calc(100dvh - var(--bar))}
+#v-store{min-height:calc(100dvh - var(--bar))}
+button,[data-act],.chip,.swatch{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@media (pointer:coarse){
+  .chip,.tabs button,.seg button{min-height:44px}
+  .icon-btn,.qty button{min-width:44px;min-height:44px}
+  .btn-sm{min-height:44px}
+  .nav-b{min-height:48px}
+}
+
+/* all-screens pass */
+button,a,.chip,select,summary{touch-action:manipulation}
+.brand{min-height:40px}
+.chip{min-height:38px;display:inline-flex;align-items:center}
+.dash-main{max-width:1440px}
+@media (min-width:640px) and (max-width:900px){
+  .stats{grid-template-columns:repeat(4,1fr)}
+  .stat{padding:16px 14px}
+  .stat+.stat{border-inline-start:1px solid var(--line)}
+  .stat:nth-child(n+3){border-top:0}
+  .stat .v{font-size:1.1rem}
+  .grid-2{grid-template-columns:1.3fr 1fr}
+}
+@media (max-width:420px){
+  .page-h h2{font-size:1.45rem}
+  .page-h .btn{flex:1}
+  .dz-view,.browser{border-radius:18px}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .drawer>header{padding:10px 16px}.drawer .body{padding:12px 16px}.dialog{padding:20px}
+  .hero{padding:24px 0}
+}
+.strip{padding:4px 16px}.strip button{min-height:38px;padding:0 8px}
 </style>
 </head>
 <body>
@@ -771,7 +819,6 @@ button.pm-t[aria-pressed="true"]{border-color:var(--primary);box-shadow:0 0 0 3p
           <button class="btn btn-ghost" data-act="go" data-view="auth">تسجيل الدخول</button>
           <button class="btn btn-ghost" data-act="go" data-view="store">تصفّح المتاجر</button>
         </div>
-        <div class="pay-trust"><span>تستقبل التحويلات عبر</span><div class="wl-strip" id="hero-wl"></div></div>
         <p class="fine">كل ما تراه هنا نسخة تجريبية ببيانات وهمية، وتعود إلى وضعها الأول عند تحديث الصفحة.</p>
       </div>
       <div class="hero-art">
@@ -1341,7 +1388,7 @@ function pageOverview(){
   if(revN) todo.push(`<button data-act="go" data-view="dash" data-page="orders" data-f="review"><span class="n">${ar(revN)}</span><span>حوالات بانتظار المراجعة</span></button>`);
   if(low.length) todo.push(`<button data-act="dpage" data-page="products"><span class="n">${ar(low.length)}</span><span>منتجات قاربت على النفاد</span></button>`);
   const recent=O.slice().sort((a,b)=>b.id-a.id).slice(0,5).map(o=>`<div><div><b>${esc(o.name)}</b><br><small>${o.city}، ${fy(o.total)}</small></div>${badge(o.status)}</div>`).join('');
-  return `<div class="page-h"><h2>نظرة عامة</h2><button class="btn btn-ghost" data-act="go" data-view="store">${ico('cart')} معاينة المتجر</button></div>
+  return `<div class="page-h"><h2>نظرة عامة</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" data-act="share-store">${ico('share')} شارك متجرك</button><button class="btn btn-ghost" data-act="go" data-view="store">${ico('cart')} معاينة المتجر</button></div></div>
   <div class="stats">
     <div class="stat"><div class="v">${fy(sum(today.map(o=>o.total)))}</div><div class="l">مبيعات اليوم</div></div>
     <div class="stat"><div class="v">${ar(today.length)}</div><div class="l">طلبات اليوم</div></div>
@@ -2205,7 +2252,7 @@ $$('[data-ico]').forEach(n=>{n.innerHTML=ico(n.dataset.ico);});
 $('#logo-bar').innerHTML=fanSVG({rings:[[100,60,7]],cls:'mini',decor:true});
 $('#hero-fan').innerHTML=`<img src="${window.matchMedia('(prefers-reduced-motion: reduce)').matches?LOCKUP_STILL:LOCKUP}" alt="شعار دكّان: نافذة قمرية ملونة وكلمة دكّان" width="800" height="320">`;
 $('#themeBtn').textContent=window.matchMedia('(prefers-color-scheme: dark)').matches?'فاتح':'داكن';
-$('#hero-wl').innerHTML=WAL.map(x=>walImg(x.id)).join('');
+
 if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&'IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.12});$$('#v-landing .frow,#v-landing .two,#v-landing .plan,#v-landing .cta-in,#v-landing .browser,#v-landing .jsteps li,#v-landing .feat-row').forEach(n=>{n.classList.add('rv');io.observe(n);});}
 renderLanding();
 })();
