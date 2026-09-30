@@ -698,6 +698,57 @@ label.btn{position:relative;overflow:hidden}
   .frow,.frow:last-child{grid-column:auto;padding:24px}
   .frow:last-child{display:block}.frow:last-child .fv{margin-top:24px}
 }
+
+/* showcase: dark stage, light dashboard mockups */
+.showcase{padding:84px 0 40px;color:#EBEEF9;background:radial-gradient(700px 320px at 12% 0,rgba(92,124,214,.28),transparent 70%),radial-gradient(600px 300px at 92% 60%,rgba(15,124,122,.25),transparent 70%),#0E1430;--ink:#EBEEF9;--ink-2:#A0A9CB;--line:#2A3564}
+.showcase>.wrap>h2{font-size:clamp(1.7rem,3.2vw,2.5rem);line-height:1.45;margin-bottom:10px}
+.showcase .sub{color:#A0A9CB}
+.feat-row{display:grid;grid-template-columns:.8fr 1.2fr;gap:64px;align-items:center;padding:56px 0}
+.feat-row.flip .fr-tx{order:2}
+.fr-tx h3{font-size:1.9rem;line-height:1.5;margin-bottom:10px}
+.fr-tx p{color:#A0A9CB;max-width:26em;margin-bottom:20px}
+.fr-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.fr-list li{display:flex;gap:8px;align-items:flex-start;font-size:.95rem}
+.fr-list .ico{width:18px;height:18px;margin-top:5px;color:#F5B54A}
+.browser.sm{border-color:#2A3564;box-shadow:0 34px 70px rgba(0,0,0,.45);background:#fff}
+.mk{--ink:#131B3A;--ink-2:#4A5472;--line:#D2D9E0;--surface:#fff;--surface-2:#E6EBEF;--primary:#27358F;--info-bg:#E2E7FA;--ok:#12704F;color:var(--ink);background:var(--surface-2);padding:14px;line-height:1.6;font-size:.9rem}
+.mk-h{font-weight:700;margin-bottom:10px}
+#mk-editor{display:grid;grid-template-columns:.8fr 1.2fr;gap:14px;align-items:start}
+.mk-side{display:grid;gap:8px}
+.mk-side .blk-row{padding:9px 10px;border-radius:12px;cursor:default}
+.mk-prev .previewbox{border-radius:14px;overflow:hidden}
+.pm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pm-t{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;min-height:58px}
+.pm-t.wide{grid-column:1/-1;font-weight:600}
+.pm-t .wl-img{height:34px;max-width:70px;padding:0;margin-inline-start:auto}
+.pm-r{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:none}
+.pm-r.on{border:5px solid var(--primary)}
+.mk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.mk-stats>div,.mk-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.mk-stats b{display:block;font:700 1.25rem/1.4 var(--f-display)}
+.mk-stats span{color:var(--ink-2);font-size:.82rem}
+.mk-cols{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+.mk-li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.mk-li b{font-weight:600;font-size:.88rem}
+@media (max-width:900px){
+  .feat-row{grid-template-columns:1fr;gap:28px;padding:36px 0}
+  .feat-row.flip .fr-tx{order:0}
+  #mk-editor,.mk-cols{grid-template-columns:1fr}
+}
+
+.mk-mv{width:30px;height:30px;font-size:1rem}
+.mk-mv[disabled]{opacity:.3;cursor:default}
+.mk-side .blk-row{cursor:grab;padding:8px 8px 8px 6px}
+.mk-side .blk-row .icon-btn{width:32px;height:32px}
+.mk-hint{font-size:.8rem;color:var(--ink-2);margin:-4px 0 10px}
+button.pm-t{width:100%;text-align:start;transition:border-color .15s,box-shadow .15s}
+button.pm-t:hover{border-color:var(--primary)}
+button.pm-t[aria-pressed="true"]{border-color:var(--primary);box-shadow:0 0 0 3px var(--info-bg)}
+.mk-sel{font-weight:600;margin:0 0 4px;min-height:1.7em}
+.mk .bcol{cursor:pointer;background:none;border:0;padding:0;text-align:center;font:inherit;color:inherit}
+.mk .bcol:hover .bar{opacity:1}
+.mk .bcol.sel .bar{background:var(--accent);opacity:1}
+.mk .bar{transition:background .15s}
 </style>
 </head>
 <body>
@@ -736,26 +787,14 @@ label.btn{position:relative;overflow:hidden}
     <div class="seg" role="group" aria-label="نوع النشاط" id="demo-kinds"><button data-act="demo-kind" data-k="coffee" aria-pressed="true">بُن وعسل</button><button data-act="demo-kind" data-k="perfume" aria-pressed="false">عطور وبخور</button><button data-act="demo-kind" data-k="clothing" aria-pressed="false">ملابس وأزياء</button></div></div>
     <div class="browser"><div class="b-top"><i></i><i></i><i></i><bdi dir="ltr" id="demo-url"></bdi></div><div id="demo-store" class="store-ui" inert></div></div>
   </div></section>
-  <div class="band">
-    <div class="wrap sec">
-      <div class="two">
-        <div>
-          <h2>يدفع العميل كما اعتاد</h2>
-          <p class="sub">لا تحتاج بطاقة بنكية لتبدأ. فعّل الطرق التي تتعامل بها أصلًا، وأدخل بياناتك مرة واحدة، وتظهر للعميل عند إتمام الطلب.</p>
-        </div>
-        <ul class="methods">
-          <li class="method"><span class="m-ico" data-ico="cash"></span><div><strong>الدفع عند الاستلام</strong><p>الأكثر استخدامًا، ويعمل من أول يوم بدون أي ربط.</p></div></li>
-          <li class="method"><span class="m-ico" data-ico="swap"></span><div><strong>التحويلات</strong><p>يختار التاجر شبكات التحويل التي يستقبل عليها، وتظهر شعاراتها للعميل مع بيانات الاستلام.</p><div class="wl-strip" id="wl-strip"></div></div></li>
-          </ul>
-      </div>
-    </div>
-  </div>
+  
 
-  <section class="wrap steps-sec"><h2>من الفكرة إلى أول طلب، بثلاث خطوات</h2><ol class="jsteps">
+  <section class="showcase"><div class="wrap"><h2>أدواتك كلها على شاشات واضحة</h2><p class="sub">هذي نماذج من لوحة التاجر ببيانات المتجر التجريبي، مو صور ثابتة.</p><div class="feat-row"><div class="fr-tx"><h3>شكّل متجرك بدون كود</h3><p>رتّب أقسام الصفحة بالسحب، وغيّر الألوان والخط والشعار، والمعاينة تتحدّث قدامك مباشرة.</p><ul class="fr-list"><li><span data-ico="check"></span>سحب وإفلات للأقسام</li><li><span data-ico="check"></span>معاينة حيّة</li><li><span data-ico="check"></span>يناسب الجوال</li><li><span data-ico="check"></span>بدون خبرة برمجية</li></ul></div><div class="browser sm"><div class="b-top"><i></i><i></i><i></i><bdi dir="ltr">dukkan.ye/dashboard/builder</bdi></div><div class="mk" id="mk-editor"></div></div></div><div class="feat-row flip"><div class="fr-tx"><h3>كل طرق الدفع من أول يوم</h3><p>فعّل الدفع عند الاستلام وشبكات التحويل اللي تتعامل بها، والعميل يرفع الإيصال داخل الموقع.</p><ul class="fr-list"><li><span data-ico="check"></span>٨ شبكات تحويل</li><li><span data-ico="check"></span>الدفع عند الاستلام مع ملاحظتك</li><li><span data-ico="check"></span>إيصال يُرفع في الموقع</li><li><span data-ico="check"></span>اعتماد الحوالة بضغطة</li></ul></div><div class="browser sm"><div class="b-top"><i></i><i></i><i></i><bdi dir="ltr">dukkan.ye/dashboard/payments</bdi></div><div class="mk" id="mk-pay"></div></div></div><div class="feat-row"><div class="fr-tx"><h3>أرقام متجرك قدامك</h3><p>مبيعات الأسبوع، والطلبات اللي تحتاج إجراء، والمنتجات اللي قاربت على النفاد، في شاشة واحدة.</p><ul class="fr-list"><li><span data-ico="check"></span>مبيعات آخر ٧ أيام</li><li><span data-ico="check"></span>تنبيهات المخزون</li><li><span data-ico="check"></span>حالة كل طلب</li><li><span data-ico="check"></span>متوسط قيمة الطلب</li></ul></div><div class="browser sm"><div class="b-top"><i></i><i></i><i></i><bdi dir="ltr">dukkan.ye/dashboard</bdi></div><div class="mk" id="mk-rep"></div></div></div></div></section>
+<section class="wrap steps-sec"><h2>من الفكرة إلى أول طلب، بثلاث خطوات</h2><ol class="jsteps">
 <li><h3>أنشئ حسابك</h3><p>اسمك ورقم جوالك وكلمة مرور. بدون بطاقة بنكية وبدون خبرة برمجية.</p></li>
 <li><h3>جهّز متجرك</h3><p>اسم المتجر وشعاره وألوانه، وتبدأ بمنتجات تجريبية تعدّل عليها أو بمتجر فارغ.</p></li>
 <li><h3>ابدأ البيع</h3><p>فعّل التحويلات والدفع عند الاستلام، وشارك رابط متجرك، وتصلك الطلبات في لوحتك.</p></li></ol></section>
-<div class="wrap"><h2 class="bento-h">كل ما يحتاجه متجرك في مكان واحد</h2>
+<div class="wrap"><h2 class="bento-h">وتفاصيل تهمّ كل تاجر</h2>
     <div class="frow">
       <div>
         <h3>الطلبات تصلك في لوحتك مباشرة</h3>
@@ -1228,7 +1267,33 @@ function renderDemo(){
   $('#demo-url').textContent=st.slug+'.dukkan.ye';
   $$('[data-act="demo-kind"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.k===k)));
 }
-function renderLanding(){
+const MK={sections:null,pay:null,day:0};
+function mkInit(){
+  if(MK.sections)return;
+  MK.sections=clone(state.store.sections);MK.pay=WAL.map((x,i)=>i<5).concat([true]);
+}
+function renderMkEditor(){
+  const S=state.store,sv=state.store;state.store=Object.assign({},S,{sections:MK.sections});
+  let pv;try{pv=previewHTML();}finally{state.store=sv;}
+  const n=MK.sections.length;
+  $('#mk-editor').innerHTML=`<div class="mk-side"><div class="mk-h">أقسام الصفحة الرئيسية</div><p class="mk-hint">جرّب: اسحب قسمًا، أو حرّكه بالأسهم، أو أخفِه بالعين.</p>${MK.sections.map((sec,i)=>{const m=SECTIONS_META[sec.id];return `<div class="blk-row${sec.on?'':' off'}" draggable="true" data-mkdnd="${sec.id}"><span class="blk-handle" aria-hidden="true">${ico('grip')}</span><div class="blk-info"><b>${m.n}</b></div><button class="icon-btn mk-mv" data-act="mk-mv" data-s="${sec.id}" data-d="-1" aria-label="تحريك ${m.n} للأعلى"${i===0?' disabled':''}>↑</button><button class="icon-btn mk-mv" data-act="mk-mv" data-s="${sec.id}" data-d="1" aria-label="تحريك ${m.n} للأسفل"${i===n-1?' disabled':''}>↓</button><button class="icon-btn" data-act="mk-eye" data-s="${sec.id}" aria-label="${sec.on?'إخفاء':'إظهار'} ${m.n}">${ico(sec.on?'eye':'eyeOff')}</button></div>`;}).join('')}</div><div class="mk-prev">${pv}</div>`;
+}
+function renderMkPay(){
+  const on=MK.pay.filter(Boolean).length;
+  $('#mk-pay').innerHTML=`<div class="mk-h">طرق الدفع</div><p class="mk-hint">جرّب: اضغط على الشبكات اللي تستقبل عليها. مفعّل الآن ${ar(on)} من ${ar(MK.pay.length)}.</p><div class="pm-grid">${WAL.map((x,i)=>`<button class="pm-t" data-act="mk-pay" data-i="${i}" aria-pressed="${MK.pay[i]}" aria-label="شبكة تحويل ${ar(i+1)}"><i class="pm-r${MK.pay[i]?' on':''}"></i><img class="wl-img" src="${x.img}" alt=""></button>`).join('')}<button class="pm-t wide" data-act="mk-pay" data-i="${WAL.length}" aria-pressed="${MK.pay[WAL.length]}"><i class="pm-r${MK.pay[WAL.length]?' on':''}"></i>${ico('cash')}<span>الدفع عند الاستلام</span></button></div>`;
+}
+function renderMkRep(){
+  const O=state.orders,days=[6,5,4,3,2,1,0].map(d=>({d,v:sum(O.filter(o=>o.day===d).map(o=>o.total)),n:O.filter(o=>o.day===d).length})),mx=Math.max(1,...days.map(x=>x.v)),low=state.products.filter(p=>p.on&&p.s<=5),cur=days.find(x=>x.d===MK.day),lab=d=>d===0?'اليوم':WD[new Date(Date.now()-d*864e5).getDay()];
+  $('#mk-rep').innerHTML=`<div class="mk-stats"><div><b>${fy(sum(O.filter(o=>o.day===0).map(o=>o.total)))}</b><span>مبيعات اليوم</span></div><div><b>${ar(O.length)}</b><span>إجمالي الطلبات</span></div><div><b>${ar(O.filter(o=>o.status==='new'||o.status==='review').length)}</b><span>تحتاج إجراء</span></div></div><div class="mk-cols"><div class="mk-card"><div class="mk-h">مبيعات آخر ٧ أيام</div><p class="mk-sel">${lab(cur.d)}: ${fy(cur.v)}، عدد الطلبات ${ar(cur.n)}</p><div class="bars" style="height:120px">${days.map(x=>`<button class="bcol${x.d===MK.day?' sel':''}" data-act="mk-day" data-d="${x.d}" aria-label="${lab(x.d)}، ${fy(x.v)}" aria-pressed="${x.d===MK.day}"><div class="bar" style="height:${Math.max(4,Math.round(x.v/mx*80))}px"></div><span class="blab">${lab(x.d)}</span></button>`).join('')}</div></div><div class="mk-card"><div class="mk-h">قاربت على النفاد</div>${low.slice(0,3).map(p=>`<div class="mk-li"><b>${esc(p.n)}</b><span class="badge ${p.s<=0?'b-bad':'b-review'}">${p.s<=0?'نفدت':ar(p.s)+' فقط'}</span></div>`).join('')||'<p class="hint">المخزون بخير.</p>'}</div></div>`;
+}
+function renderMocks(){if(!$('#mk-editor'))return;mkInit();renderMkEditor();renderMkPay();renderMkRep();}
+let mkDrag=null;
+document.addEventListener('dragstart',e=>{const el=e.target.closest('[data-mkdnd]');if(el){mkDrag=el.dataset.mkdnd;el.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',mkDrag);}catch(_){}}}});
+document.addEventListener('dragover',e=>{const el=e.target.closest('[data-mkdnd]');if(el&&mkDrag){e.preventDefault();el.classList.add('drag-over');}});
+document.addEventListener('dragleave',e=>{const el=e.target.closest('[data-mkdnd]');if(el)el.classList.remove('drag-over');});
+document.addEventListener('drop',e=>{const el=e.target.closest('[data-mkdnd]');if(!el||!mkDrag)return;e.preventDefault();const a=MK.sections,f=a.findIndex(x=>x.id===mkDrag),t=a.findIndex(x=>x.id===el.dataset.mkdnd);if(f>-1&&t>-1&&f!==t){const [it]=a.splice(f,1);a.splice(t,0,it);}mkDrag=null;renderMkEditor();});
+document.addEventListener('dragend',()=>{mkDrag=null;$$('#mk-editor .dragging,#mk-editor .drag-over').forEach(n=>n.classList.remove('dragging','drag-over'));});
+function renderLanding(){renderMocks();
   $('#mini-cities').innerHTML=`<thead><tr><th>المدينة</th><th>سعر التوصيل</th><th>المدة</th></tr></thead><tbody>${state.cities.filter(c=>c.on).slice(0,4).map(c=>`<tr><td>${c.n}</td><td>${fy(c.p)}</td><td>${c.d} يوم</td></tr>`).join('')}</tbody>`;
   $('#cur-demo-price').textContent=fmt(65000,state.demoCur);
   $$('[data-act="demo-cur"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.c===state.demoCur)));
@@ -1976,6 +2041,10 @@ document.addEventListener('click',e=>{
   const a=t.dataset.act,id=+t.dataset.id;
   switch(a){
     case 'go': go(t.dataset.view,t.dataset.page,t.dataset.f);break;
+    case 'mk-eye':{const sec=MK.sections.find(x=>x.id===t.dataset.s);if(sec)sec.on=!sec.on;renderMkEditor();break;}
+    case 'mk-mv':{const a=MK.sections,i=a.findIndex(x=>x.id===t.dataset.s),j=i+(+t.dataset.d);if(i>-1&&j>=0&&j<a.length){[a[i],a[j]]=[a[j],a[i]];}renderMkEditor();break;}
+    case 'mk-pay': MK.pay[+t.dataset.i]=!MK.pay[+t.dataset.i];renderMkPay();break;
+    case 'mk-day': MK.day=+t.dataset.d;renderMkRep();break;
     case 'theme': toggleTheme();break;
     case 'demo-kind': state.demoKind=t.dataset.k;renderDemo();break;
     case 'demo-cur': state.demoCur=t.dataset.c;renderLanding();break;
@@ -2136,8 +2205,8 @@ $$('[data-ico]').forEach(n=>{n.innerHTML=ico(n.dataset.ico);});
 $('#logo-bar').innerHTML=fanSVG({rings:[[100,60,7]],cls:'mini',decor:true});
 $('#hero-fan').innerHTML=`<img src="${window.matchMedia('(prefers-reduced-motion: reduce)').matches?LOCKUP_STILL:LOCKUP}" alt="شعار دكّان: نافذة قمرية ملونة وكلمة دكّان" width="800" height="320">`;
 $('#themeBtn').textContent=window.matchMedia('(prefers-color-scheme: dark)').matches?'فاتح':'داكن';
-$('#wl-strip').innerHTML=$('#hero-wl').innerHTML=WAL.map(x=>walImg(x.id)).join('');
-if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&'IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.12});$$('#v-landing .frow,#v-landing .two,#v-landing .plan,#v-landing .cta-in,#v-landing .browser,#v-landing .jsteps li').forEach(n=>{n.classList.add('rv');io.observe(n);});}
+$('#hero-wl').innerHTML=WAL.map(x=>walImg(x.id)).join('');
+if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&'IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.12});$$('#v-landing .frow,#v-landing .two,#v-landing .plan,#v-landing .cta-in,#v-landing .browser,#v-landing .jsteps li,#v-landing .feat-row').forEach(n=>{n.classList.add('rv');io.observe(n);});}
 renderLanding();
 })();
 </script>
