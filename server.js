@@ -135,7 +135,7 @@ http.createServer(async(req,res)=>{
   const u=new URL(req.url,'http://x'),k=req.method+' '+u.pathname;
   const out=(c,o,t='application/json; charset=utf-8')=>{res.writeHead(c,{'Content-Type':t});res.end(Buffer.isBuffer(o)||typeof o==='string'?o:JSON.stringify(o));};
   try{
-    if(k==='GET /'||k==='GET /index.html')return out(200,fs.readFileSync(path.join(__dirname,'dukkan-demo.html')),'text/html; charset=utf-8');
+    if(k==='GET /'||k==='GET /index.html')return out(200,fs.readFileSync(path.join(__dirname,'index.html')),'text/html; charset=utf-8');
     const ip=req.socket.remoteAddress;hits[ip]=(hits[ip]||0)+1;if(hits[ip]>120)return out(429,{error:'طلبات كثيرة'});
     if(u.pathname==='/webhook'){
       if(req.method==='GET')return u.searchParams.get('hub.verify_token')===C.verify?out(200,u.searchParams.get('hub.challenge')||'','text/plain'):out(403,'forbidden','text/plain');
