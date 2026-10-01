@@ -150,7 +150,7 @@ http.createServer(async(req,res)=>{
     const raw=req.method==='POST'?await body(req):'',r=await h(raw?JSON.parse(raw):{},u.searchParams);
     Array.isArray(r)?out(r[0],r[1]):out(200,r);
   }catch(e){console.error(e);out(500,{error:'خطأ في السيرفر'});}
-}).listen(PORT,()=>{
+}).listen(PORT,'0.0.0.0',()=>{
   console.log(`دكّان يشتغل على http://localhost:${PORT}  ${{mock:'(وضع تجريبي: الرسائل تُطبع هنا ولا تُرسل)',web:'(واتساب بالباركود)',cloud:'(واتساب الرسمي Cloud API)'}[MODE]}`);
   if(MODE==='web')startWeb();
 });
