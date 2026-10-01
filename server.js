@@ -1,13 +1,13 @@
-'use strict';
-// سيرفر دكّان: بدون مكتبات خارجية (Node 18 أو أحدث). التشغيل: node server.js
+const qrcode = require('qrcode-terminal');
+const { Client, LocalAuth } = require('whatsapp-web.js');// سيرفر دكّان: بدون مكتبات خارجية (Node 18 أو أحدث). التشغيل: node server.js
 const http=require('http'),fs=require('fs'),os=require('os'),path=require('path'),crypto=require('crypto');
 try{for(const l of fs.readFileSync(path.join(__dirname,'.env'),'utf8').split(/\r?\n/)){const m=l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);if(m&&!(m[1] in process.env))process.env[m[1]]=m[2].replace(/^["']|["']$/g,'');}}catch{}
 const E=process.env,PORT=+E.PORT||3000;
 const C={token:E.WA_TOKEN,phoneId:E.WA_PHONE_ID,verify:E.WA_VERIFY_TOKEN||'dukkan-verify',secret:E.WA_APP_SECRET,ver:E.WA_API_VERSION||'v21.0',
   platform:(E.WA_PLATFORM_PHONE||'967700000000').replace(/\D/g,''),tplStatus:E.WA_TPL_STATUS||'order_status',tplNew:E.WA_TPL_NEW_ORDER||'new_order'};
 // الأوضاع: mock = تجريبي (الرسائل تُطبع في الشاشة) | web = واتساب بالباركود (رقم مربوط) | cloud = الـ API الرسمي من Meta
-const MODE=/^web$/i.test(E.WA_MODE||'')?'web':(C.token&&C.phoneId?'cloud':'mock');
-const MOCK=MODE==='mock';
+
+const MODE = 'web';
 const DBF=path.join(__dirname,'data.json');
 let db={regs:{},orders:{},seen:{}};try{db=Object.assign(db,JSON.parse(fs.readFileSync(DBF,'utf8')));}catch{}
 const save=()=>fs.writeFile(DBF,JSON.stringify(db),()=>{});
@@ -25,46 +25,45 @@ async function wa(body){
   }catch(e){console.error('خطأ شبكة:',e.message);}
 }
 // ---------- واتساب بالباركود (whatsapp-web.js) ----------
-let web=null,webReady=false;
-// طابور إرسال: رسالة كل ١٫٥ ثانية على الأقل، لتقليل خطر حظر الرقم
-let webQ=Promise.resolve();
-const webSend=body=>{const p=webQ.then(()=>webSendNow(body));webQ=p.catch(()=>{}).then(()=>new Promise(r=>setTimeout(r,1500)));return p;};
-async function webSendNow(body){
-  const text=body.text&&body.text.body;
-  if(!text)return{error:'unsupported'};
-  if(!webReady){console.error('واتساب غير جاهز بعد (امسح الباركود أو انتظر الاتصال)');return{error:'not_ready'};}
-  try{
-    const id=await web.getNumberId(String(body.to));
-    if(!id)return{error:'not_on_whatsapp'};
-    await web.sendMessage(id._serialized,text,{sendSeen:false});
-    return{ok:true};
-  }catch(e){console.error('خطأ إرسال واتساب:',e.message);return{error:e.message};}
+const client = new Client({
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--single-process'
+        ]
+    }
+});
+
+client.on('qr', (qr) => {
+    qrcode.generate(qr, { small: true });
+    console.log('=== امسحي هذا الباركود عبر الواتساب للربط ===');
+});
+
+client.on('ready', () => {
+    console.log('=== تم ربط الواتساب بنجاح! السيرفر جاهز ===');
+});
+client.on('message', async (msg) => {
+    if (msg.fromMe || msg.isStatus || !msg.from.endsWith('@c.us')) return;
+    inbound(msg.from, msg.body);
+});
+client.initialize();
+// دالة إرسال الرسائل عبر واتساب المربوط بالباركود
+async function webSend(body) {
+    try {
+        const chatId = body.to.includes('@c.us') ? body.to : `${body.to.replace(/\D/g, '')}@c.us`;
+        const text = body.text || body.text?.body || body.message || '';
+        await client.sendMessage(chatId, text);
+        console.log(`تم إرسال الرسالة بنجاح إلى: ${chatId}`);
+        return { status: 'success' };
+    } catch (error) {
+        console.error('خطأ في إرسال الرسالة عبر الواتساب:', error);
+        return { error: error.message };
+    }
 }
-function startWeb(){
-  let lib,qrt;
-  try{lib=require('whatsapp-web.js');}catch{console.error('\nوضع الباركود يحتاج المكتبة. نفّذ:  npm install whatsapp-web.js qrcode-terminal\n');process.exit(1);}
-  try{qrt=require('qrcode-terminal');}catch{}
-  const boot=()=>web.initialize().catch(e=>console.error('تعذّر تشغيل واتساب:',e.message));
-  web=new lib.Client({
-    authStrategy:new lib.LocalAuth({dataPath:E.WA_SESSION_DIR||path.join(os.homedir(),'dukkan-session')}),
-    puppeteer:{headless:true,args:['--no-sandbox','--disable-setuid-sandbox']}
-  });
-  web.on('qr',q=>{console.log('\nامسح الباركود من واتساب في جوالك: الأجهزة المرتبطة > ربط جهاز\n');qrt?qrt.generate(q,{small:true}):console.log(q);});
-  web.on('authenticated',()=>console.log('تم الربط، جاري التشغيل…'));
-  web.on('auth_failure',m=>console.error('فشل الربط:',m));
-  web.on('ready',()=>{webReady=true;console.log('واتساب جاهز ✅ ويرسل رموز التحقق والإشعارات.');});
-  web.on('disconnected',r=>{webReady=false;console.error('انقطع واتساب:',r,'— إعادة المحاولة بعد ٥ ثوانٍ');setTimeout(()=>web.destroy().catch(()=>{}).finally(boot),5000);});
-  web.on('message',async m=>{
-    try{
-      const from=String(m.from||'');
-      if(m.fromMe||m.isStatus||from.endsWith('@g.us'))return;
-      let num=from.split('@')[0];
-      if(from.endsWith('@lid')){const c=await m.getContact();if(c&&c.number)num=c.number;}
-      inbound(num,m.body||'');
-    }catch(e){console.error(e.message);}
-  });
-  boot();
-}
+
 
 const sendText=(to,t)=>wa({to,type:'text',text:{body:t}});
 const sendTpl=(to,name,ps)=>wa({to,type:'template',template:{name,language:{code:'ar'},components:[{type:'body',parameters:ps.map(t=>({type:'text',text:String(t)}))}]}});
@@ -135,7 +134,7 @@ http.createServer(async(req,res)=>{
   const u=new URL(req.url,'http://x'),k=req.method+' '+u.pathname;
   const out=(c,o,t='application/json; charset=utf-8')=>{res.writeHead(c,{'Content-Type':t});res.end(Buffer.isBuffer(o)||typeof o==='string'?o:JSON.stringify(o));};
   try{
-    if(k==='GET /'||k==='GET /index.html')return out(200,fs.readFileSync(path.join(__dirname,'index.html')),'text/html; charset=utf-8');
+    if(k==='GET /'||k==='GET /index.html')return out(200,fs.readFileSync(path.join(__dirname,'index.html.html')),'text/html; charset=utf-8');
     const ip=req.socket.remoteAddress;hits[ip]=(hits[ip]||0)+1;if(hits[ip]>120)return out(429,{error:'طلبات كثيرة'});
     if(u.pathname==='/webhook'){
       if(req.method==='GET')return u.searchParams.get('hub.verify_token')===C.verify?out(200,u.searchParams.get('hub.challenge')||'','text/plain'):out(403,'forbidden','text/plain');
