@@ -47,7 +47,7 @@ function startWeb(){
   const boot=()=>web.initialize().catch(e=>console.error('تعذّر تشغيل واتساب:',e.message));
   web=new lib.Client({
     authStrategy:new lib.LocalAuth({dataPath:E.WA_SESSION_DIR||path.join(os.homedir(),'dukkan-session')}),
-    puppeteer:{headless:true,args:['--no-sandbox','--disable-setuid-sandbox']}
+authStrategy: new lib.LocalAuth()
   });
   web.on('qr',q=>{webQR=q;console.log('\nامسح الباركود من واتساب في جوالك: الأجهزة المرتبطة > ربط جهاز');console.log('إذا ظهر الباركود مشوّهًا هنا، افتح في المتصفح: http://localhost:'+PORT+'/qr\n');qrt?qrt.generate(q,{small:true}):console.log(q);});
   web.on('authenticated',()=>console.log('تم الربط، جاري التشغيل…'));
