@@ -44,8 +44,7 @@ function startWeb(){
   let lib,qrt;
   try{lib=require('whatsapp-web.js');}catch{console.error('\nوضع الباركود يحتاج المكتبة. نفّذ:  npm install whatsapp-web.js qrcode-terminal\n');process.exit(1);}
   try{qrt=require('qrcode-terminal');}catch{}
-  const boot=()=>web.initialize().catch(e=>console.error('تعذّر تشغيل واتساب:',e.message));
-web = new lib.Client({
+ web = new lib.Client({
     authStrategy: new lib.LocalAuth(),
     puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }
 });
