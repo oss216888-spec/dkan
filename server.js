@@ -25,7 +25,7 @@ async function wa(body){
   }catch(e){console.error('خطأ شبكة:',e.message);}
 }
 // ---------- واتساب بالباركود (whatsapp-web.js) ----------
-let web=null,webReady=false,webQR='';
+let web=null,webReady=false;
 // طابور إرسال: رسالة كل ١٫٥ ثانية على الأقل، لتقليل خطر حظر الرقم
 let webQ=Promise.resolve();
 const webSend=body=>{const p=webQ.then(()=>webSendNow(body));webQ=p.catch(()=>{}).then(()=>new Promise(r=>setTimeout(r,1500)));return p;};
@@ -40,45 +40,32 @@ async function webSendNow(body){
     return{ok:true};
   }catch(e){console.error('خطأ إرسال واتساب:',e.message);return{error:e.message};}
 }
-  
-  function startweb() {
-    const { Client, LocalAuth } = require('whatsapp-web.js');
-    const qrcode = require('qrcode-terminal');
-    
-    web = new Client({
-        authStrategy: new LocalAuth(),
-        puppeteer: { 
-            headless: true, 
-            args: ['--no-sandbox', '--disable-setuid-sandbox'] 
-        }
-    });
-
-    web.on('qr', (qr) => {
-        webQR = qr;
-        try { qrcode.generate(qr, { small: true }); } catch(e){}
-        console.log('QR_CODE_READY:', qr);
-    });
-
-    web.on('ready', () => {
-        webReady = true;
-        webQR = '';
-        console.log('تم الربط والجاهزية!');
-    });
-
-    web.on('auth_failure', m => console.error('فشل الربط:', m));
-    web.on('disconnected', r => { webReady = false; console.error('انقطع واتساب:', r); });
-
-    web.initialize();
+function startWeb(){
+  let lib,qrt;
+  try{lib=require('whatsapp-web.js');}catch{console.error('\nوضع الباركود يحتاج المكتبة. نفّذ:  npm install whatsapp-web.js qrcode-terminal\n');process.exit(1);}
+  try{qrt=require('qrcode-terminal');}catch{}
+  const boot=()=>web.initialize().catch(e=>console.error('تعذّر تشغيل واتساب:',e.message));
+  web=new lib.Client({
+    authStrategy:new lib.LocalAuth({dataPath:E.WA_SESSION_DIR||path.join(os.homedir(),'dukkan-session')}),
+    puppeteer:{headless:true,args:['--no-sandbox','--disable-setuid-sandbox']}
+  });
+  web.on('qr',q=>{console.log('\nامسح الباركود من واتساب في جوالك: الأجهزة المرتبطة > ربط جهاز\n');qrt?qrt.generate(q,{small:true}):console.log(q);});
+  web.on('authenticated',()=>console.log('تم الربط، جاري التشغيل…'));
+  web.on('auth_failure',m=>console.error('فشل الربط:',m));
+  web.on('ready',()=>{webReady=true;console.log('واتساب جاهز ✅ ويرسل رموز التحقق والإشعارات.');});
+  web.on('disconnected',r=>{webReady=false;console.error('انقطع واتساب:',r,'— إعادة المحاولة بعد ٥ ثوانٍ');setTimeout(()=>web.destroy().catch(()=>{}).finally(boot),5000);});
+  web.on('message',async m=>{
+    try{
+      const from=String(m.from||'');
+      if(m.fromMe||m.isStatus||from.endsWith('@g.us'))return;
+      let num=from.split('@')[0];
+      if(from.endsWith('@lid')){const c=await m.getContact();if(c&&c.number)num=c.number;}
+      inbound(num,m.body||'');
+    }catch(e){console.error(e.message);}
+  });
+  boot();
 }
-startweb();
-async function qrPage(){
-  const head='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ربط واتساب</title><style>body{font-family:system-ui,Tahoma,sans-serif;text-align:center;padding:24px;background:#f6f7f9;color:#111}img{width:min(86vw,360px);background:#fff;padding:12px;border-radius:12px}</style>';
-  if(MODE!=='web')return head+'<h2>وضع الباركود غير مفعّل</h2><p>شغّل السيرفر بـ WA_MODE=web (ملف start.bat).</p>';
-  if(webReady)return head+'<h2>✅ واتساب مربوط</h2><p>السيرفر جاهز لإرسال الرسائل.</p>';
-  if(!webQR)return head+'<meta http-equiv="refresh" content="3"><h2>جاري التشغيل…</h2><p>انتظر قليلًا، الصفحة تتحدث تلقائيًا.</p>';
-  let img='';try{img=await require('qrcode').toDataURL(webQR,{margin:1,width:360});}catch{}
-  return head+'<meta http-equiv="refresh" content="8"><h2>امسح الباركود</h2><p>واتساب في جوالك &gt; الأجهزة المرتبطة &gt; ربط جهاز</p>'+(img?'<img alt="QR" src="'+img+'">':'<p>ثبّت المكتبة: npm install qrcode</p>');
-}
+
 const sendText=(to,t)=>wa({to,type:'text',text:{body:t}});
 const sendTpl=(to,name,ps)=>wa({to,type:'template',template:{name,language:{code:'ar'},components:[{type:'body',parameters:ps.map(t=>({type:'text',text:String(t)}))}]}});
 // داخل نافذة ٢٤ ساعة من آخر رسالة للعميل: رسالة عادية (مجانية). خارجها: قالب معتمد (مدفوع).
@@ -148,12 +135,7 @@ http.createServer(async(req,res)=>{
   const u=new URL(req.url,'http://x'),k=req.method+' '+u.pathname;
   const out=(c,o,t='application/json; charset=utf-8')=>{res.writeHead(c,{'Content-Type':t});res.end(Buffer.isBuffer(o)||typeof o==='string'?o:JSON.stringify(o));};
   try{
-    if(k==='GET /'||k==='GET /index.html')return out(200,fs.readFileSync(path.join(__dirname,'index.html')),'text/html; charset=utf-8');
-    if(k==='GET /qr'){ // صفحة ربط واتساب: من نفس الجهاز فقط، أو عن بعد بمفتاح QR_KEY
-      const a=req.socket.remoteAddress||'',local=/^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(a)&&!req.headers['x-forwarded-for'];
-      if(!local&&!(E.QR_KEY&&u.searchParams.get('key')===E.QR_KEY))return out(403,'forbidden','text/plain');
-      return out(200,await qrPage(),'text/html; charset=utf-8');
-    }
+    if(k==='GET /'||k==='GET /index.html'){const f=['index.html','dukkan-demo.html'].map(n=>path.join(__dirname,n)).find(fs.existsSync);return f?out(200,fs.readFileSync(f),'text/html; charset=utf-8'):out(404,'ملف الموقع (index.html) غير موجود في المشروع','text/plain; charset=utf-8');}
     const ip=req.socket.remoteAddress;hits[ip]=(hits[ip]||0)+1;if(hits[ip]>120)return out(429,{error:'طلبات كثيرة'});
     if(u.pathname==='/webhook'){
       if(req.method==='GET')return u.searchParams.get('hub.verify_token')===C.verify?out(200,u.searchParams.get('hub.challenge')||'','text/plain'):out(403,'forbidden','text/plain');
@@ -168,7 +150,8 @@ http.createServer(async(req,res)=>{
     const raw=req.method==='POST'?await body(req):'',r=await h(raw?JSON.parse(raw):{},u.searchParams);
     Array.isArray(r)?out(r[0],r[1]):out(200,r);
   }catch(e){console.error(e);out(500,{error:'خطأ في السيرفر'});}
-}).listen(PORT, () => {
-    console.log(`دكان يشتغل على http://localhost:${PORT}`);
-    startweb();
+}).listen(PORT,()=>{
+  console.log(`دكّان يشتغل على http://localhost:${PORT}  ${{mock:'(وضع تجريبي: الرسائل تُطبع هنا ولا تُرسل)',web:'(واتساب بالباركود)',cloud:'(واتساب الرسمي Cloud API)'}[MODE]}`);
+  if(MODE==='web')startWeb();
 });
+setInterval(()=>{let ch=false;for(const k in db.regs)if(db.regs[k].exp<Date.now()-36e5){delete db.regs[k];ch=true;}if(ch)save();},10*60e3).unref();
