@@ -168,8 +168,7 @@ http.createServer(async(req,res)=>{
     const raw=req.method==='POST'?await body(req):'',r=await h(raw?JSON.parse(raw):{},u.searchParams);
     Array.isArray(r)?out(r[0],r[1]):out(200,r);
   }catch(e){console.error(e);out(500,{error:'خطأ في السيرفر'});}
-}).listen(PORT,()=>{
-  console.log(`دكّان يشتغل على http://localhost:${PORT}  ${{mock:'(وضع تجريبي: الرسائل تُطبع هنا ولا تُرسل)',web:'(واتساب بالباركود)',cloud:'(واتساب الرسمي Cloud API)'}[MODE]}`);
-startWeb();
+}).listen(PORT, () => {
+    console.log(`دكان يشتغل على http://localhost:${PORT}`);
+    startweb();
 });
-setInterval(()=>{let ch=false;for(const k in db.regs)if(db.regs[k].exp<Date.now()-36e5){delete db.regs[k];ch=true;}if(ch)save();},10*60e3).unref();
