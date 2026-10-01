@@ -65,9 +65,8 @@ web.on('qr', (qr) => {
       inbound(num,m.body||'');
     }catch(e){console.error(e.message);}
   });
-  boot();
 }
-
+startweb();
 async function qrPage(){
   const head='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ربط واتساب</title><style>body{font-family:system-ui,Tahoma,sans-serif;text-align:center;padding:24px;background:#f6f7f9;color:#111}img{width:min(86vw,360px);background:#fff;padding:12px;border-radius:12px}</style>';
   if(MODE!=='web')return head+'<h2>وضع الباركود غير مفعّل</h2><p>شغّل السيرفر بـ WA_MODE=web (ملف start.bat).</p>';
