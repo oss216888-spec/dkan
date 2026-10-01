@@ -25,7 +25,7 @@ async function wa(body){
   }catch(e){console.error('خطأ شبكة:',e.message);}
 }
 // ---------- واتساب بالباركود (whatsapp-web.js) ----------
-let web=null,webReady=false;
+let web=null,webReady=false,lastQR=null;
 // طابور إرسال: رسالة كل ١٫٥ ثانية على الأقل، لتقليل خطر حظر الرقم
 let webQ=Promise.resolve();
 const webSend=body=>{const p=webQ.then(()=>webSendNow(body));webQ=p.catch(()=>{}).then(()=>new Promise(r=>setTimeout(r,1500)));return p;};
@@ -47,12 +47,17 @@ function startWeb(){
   const boot=()=>web.initialize().catch(e=>console.error('تعذّر تشغيل واتساب:',e.message));
   web=new lib.Client({
     authStrategy:new lib.LocalAuth({dataPath:E.WA_SESSION_DIR||path.join(os.homedir(),'dukkan-session')}),
-    puppeteer:{headless:true,args:['--no-sandbox','--disable-setuid-sandbox']}
+    puppeteer:{headless:true,executablePath:E.PUPPETEER_EXECUTABLE_PATH||undefined,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu']}
   });
-  web.on('qr',q=>{console.log('\nامسح الباركود من واتساب في جوالك: الأجهزة المرتبطة > ربط جهاز\n');qrt?qrt.generate(q,{small:true}):console.log(q);});
+  web.on('qr',q=>{
+    lastQR=q;webReady=false;
+    console.log('QR_CODE_READY:',q);
+    console.log('\nامسح الباركود من واتساب: الأجهزة المرتبطة > ربط جهاز. الأسهل: افتح  /qr?key=مفتاحك  في المتصفح (WA_QR_KEY)\n');
+    if(qrt)qrt.generate(q,{small:true});
+  });
   web.on('authenticated',()=>console.log('تم الربط، جاري التشغيل…'));
   web.on('auth_failure',m=>console.error('فشل الربط:',m));
-  web.on('ready',()=>{webReady=true;console.log('واتساب جاهز ✅ ويرسل رموز التحقق والإشعارات.');});
+  web.on('ready',()=>{webReady=true;lastQR=null;console.log('واتساب جاهز ✅ ويرسل رموز التحقق والإشعارات.');});
   web.on('disconnected',r=>{webReady=false;console.error('انقطع واتساب:',r,'— إعادة المحاولة بعد ٥ ثوانٍ');setTimeout(()=>web.destroy().catch(()=>{}).finally(boot),5000);});
   web.on('message',async m=>{
     try{
@@ -81,6 +86,8 @@ function inbound(from,txt){
   if(m){const o=Object.values(db.orders).find(x=>x.buyer===from&&String(x.id)===m[1]);if(o)sendText(from,`طلبك #${o.id} من ${o.storeName}: ${STATUS[o.status]||o.status}.`);}
   save();
 }
+const QR_HTML='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ربط واتساب</title><body style="font-family:sans-serif;text-align:center;padding:24px;direction:rtl"><h2>ربط واتساب بدكّان</h2><p id="s">جاري التحميل…</p><div id="q" style="display:inline-block;padding:16px;background:#fff"></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>var key=new URLSearchParams(location.search).get("key"),last="";async function tick(){try{var d=await(await fetch("/qr/data?key="+encodeURIComponent(key))).json(),s=document.getElementById("s"),q=document.getElementById("q");if(d.ready){s.textContent="واتساب جاهز ✅";q.innerHTML="";last="";}else if(d.qr){s.textContent="امسح الباركود من واتساب: الأجهزة المرتبطة > ربط جهاز";if(d.qr!==last){last=d.qr;q.innerHTML="";new QRCode(q,{text:d.qr,width:300,height:300});}}else{s.textContent="بانتظار ظهور الباركود… (قد يأخذ دقيقة عند أول تشغيل)";}}catch(e){}}tick();setInterval(tick,3000);</script></body>';
+const qrKeyOk=k=>{const a=Buffer.from(String(k||'')),b=Buffer.from(String(E.WA_QR_KEY||''));return b.length>=8&&a.length===b.length&&crypto.timingSafeEqual(a,b);};
 const key=(s,i)=>s+':'+i;
 const routes={
   'GET /api/config':()=>({mock:MOCK,mode:MODE,platformPhone:C.platform}),
@@ -136,6 +143,10 @@ http.createServer(async(req,res)=>{
   const out=(c,o,t='application/json; charset=utf-8')=>{res.writeHead(c,{'Content-Type':t});res.end(Buffer.isBuffer(o)||typeof o==='string'?o:JSON.stringify(o));};
   try{
     if(k==='GET /'||k==='GET /index.html'){const f=['index.html','dukkan-demo.html'].map(n=>path.join(__dirname,n)).find(fs.existsSync);return f?out(200,fs.readFileSync(f),'text/html; charset=utf-8'):out(404,'ملف الموقع (index.html) غير موجود في المشروع','text/plain; charset=utf-8');}
+    if(k==='GET /qr'||k==='GET /qr/data'){ // صفحة الباركود: محمية بمفتاح WA_QR_KEY لأن أي شخص يمسح الباركود يربط رقمك
+      if(!qrKeyOk(u.searchParams.get('key')))return out(403,'ممنوع. اضبط WA_QR_KEY (٨ أحرف فأكثر) وافتح /qr?key=…','text/plain; charset=utf-8');
+      return k==='GET /qr'?out(200,QR_HTML,'text/html; charset=utf-8'):out(200,{ready:webReady,qr:lastQR});
+    }
     const ip=req.socket.remoteAddress;hits[ip]=(hits[ip]||0)+1;if(hits[ip]>120)return out(429,{error:'طلبات كثيرة'});
     if(u.pathname==='/webhook'){
       if(req.method==='GET')return u.searchParams.get('hub.verify_token')===C.verify?out(200,u.searchParams.get('hub.challenge')||'','text/plain'):out(403,'forbidden','text/plain');
