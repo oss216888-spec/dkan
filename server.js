@@ -25,18 +25,23 @@ async function wa(body){
   }catch(e){console.error('خطأ شبكة:',e.message);}
 }
 // ---------- واتساب بالباركود (whatsapp-web.js) ----------
+// --------- واتساب بالباركود (whatsapp-web.js) ---------
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
+        headless: true,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--single-process'
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
         ]
     }
 });
-
 client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
     console.log('=== امسحي هذا الباركود عبر الواتساب للربط ===');
