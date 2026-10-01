@@ -143,7 +143,7 @@ http.createServer(async(req,res)=>{
   const u=new URL(req.url,'http://x'),k=req.method+' '+u.pathname;
   const out=(c,o,t='application/json; charset=utf-8')=>{res.writeHead(c,{'Content-Type':t});res.end(Buffer.isBuffer(o)||typeof o==='string'?o:JSON.stringify(o));};
   try{
-    if(k==='GET /'||k==='GET /index.html')return out(200,fs.readFileSync(path.join(__dirname,'dukkan-demo.html')),'text/html; charset=utf-8');
+    if(k==='GET /'||k==='GET /index.html')return out(200,fs.readFileSync(path.join(__dirname,'index.html')),'text/html; charset=utf-8');
     if(k==='GET /qr'){ // صفحة ربط واتساب: من نفس الجهاز فقط، أو عن بعد بمفتاح QR_KEY
       const a=req.socket.remoteAddress||'',local=/^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(a)&&!req.headers['x-forwarded-for'];
       if(!local&&!(E.QR_KEY&&u.searchParams.get('key')===E.QR_KEY))return out(403,'forbidden','text/plain');
