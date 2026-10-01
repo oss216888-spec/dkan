@@ -40,34 +40,36 @@ async function webSendNow(body){
     return{ok:true};
   }catch(e){console.error('خطأ إرسال واتساب:',e.message);return{error:e.message};}
 }
-  function startweb(){
+  
+  function startweb() {
     const { Client, LocalAuth } = require('whatsapp-web.js');
     const qrcode = require('qrcode-terminal');
     
- web = new Client({
+    web = new Client({
         authStrategy: new LocalAuth(),
         puppeteer: { 
             headless: true, 
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--single-process', '--no-zygote'] 
+            args: ['--no-sandbox', '--disable-setuid-sandbox'] 
         }
     });
-    webQR = qr;
-    if (qrt) qrt.generate(qr, { small: true });
-    console.log('QR_CODE_READY:', qr);
-}
-  web.on('auth_failure',m=>console.error('فشل الربط:',m));
-  web.on('ready',()=>{webReady=true;webQR='';console.log('واتساب جاهز ✅ ويرسل رموز التحقق والإشعارات.');});
-  web.on('disconnected',r=>{webReady=false;console.error('انقطع واتساب:',r,'— إعادة المحاولة بعد ٥ ثوانٍ');setTimeout(()=>web.destroy().catch(()=>{}).finally(boot),5000);});
-  web.on('message',async m=>{
-    try{
-      const from=String(m.from||'');
-      if(m.fromMe||m.isStatus||from.endsWith('@g.us'))return;
-      let num=from.split('@')[0];
-      if(from.endsWith('@lid')){const c=await m.getContact();if(c&&c.number)num=c.number;}
-      inbound(num,m.body||'');
-    }catch(e){console.error(e.message);}
-  });
 
+    web.on('qr', (qr) => {
+        webQR = qr;
+        try { qrcode.generate(qr, { small: true }); } catch(e){}
+        console.log('QR_CODE_READY:', qr);
+    });
+
+    web.on('ready', () => {
+        webReady = true;
+        webQR = '';
+        console.log('تم الربط والجاهزية!');
+    });
+
+    web.on('auth_failure', m => console.error('فشل الربط:', m));
+    web.on('disconnected', r => { webReady = false; console.error('انقطع واتساب:', r); });
+
+    web.initialize();
+}
 startweb();
 async function qrPage(){
   const head='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ربط واتساب</title><style>body{font-family:system-ui,Tahoma,sans-serif;text-align:center;padding:24px;background:#f6f7f9;color:#111}img{width:min(86vw,360px);background:#fff;padding:12px;border-radius:12px}</style>';
