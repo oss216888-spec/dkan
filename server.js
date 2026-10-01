@@ -40,14 +40,14 @@ async function webSendNow(body){
     return{ok:true};
   }catch(e){console.error('خطأ إرسال واتساب:',e.message);return{error:e.message};}
 }
-function startWeb(){
-  let lib,qrt;
-  try{lib=require('whatsapp-web.js');}catch{console.error('\nوضع الباركود يحتاج المكتبة. نفّذ:  npm install whatsapp-web.js qrcode-terminal\n');process.exit(1);}
-  try{qrt=require('qrcode-terminal');}catch{}
- web = new lib.Client({
-    authStrategy: new lib.LocalAuth(),
-    puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }
-});
+  function startweb(){
+    const { Client, LocalAuth } = require('whatsapp-web.js');
+    const qrcode = require('qrcode-terminal');
+    
+    web = new Client({
+        authStrategy: new LocalAuth(),
+        puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }
+    });
 web.on('qr', (qr) => {
     webQR = qr;
     if (qrt) qrt.generate(qr, { small: true });
