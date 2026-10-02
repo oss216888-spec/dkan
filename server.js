@@ -45,17 +45,22 @@ function startWeb(){
   try{lib=require('whatsapp-web.js');}catch{webErr='مكتبة whatsapp-web.js غير مثبتة (فشل تثبيتها أثناء البناء)';console.error('\n'+webErr+'. نفّذ: npm install whatsapp-web.js qrcode-terminal\n');return;}
   try{qrt=require('qrcode-terminal');}catch{}
   const boot=()=>web.initialize().catch(e=>{webErr='تعذّر تشغيل واتساب: '+String(e.message).slice(0,300);console.error(webErr);});
-  web=new lib.Client({
+  const opts={
     authStrategy:new lib.LocalAuth({dataPath:E.WA_SESSION_DIR||path.join(os.homedir(),'dukkan-session')}),
-    puppeteer:{headless:true,executablePath:E.PUPPETEER_EXECUTABLE_PATH||undefined,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu']}
-  });
+    puppeteer:{headless:true,executablePath:E.PUPPETEER_EXECUTABLE_PATH||undefined,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--disable-extensions','--disable-background-networking','--mute-audio']}
+  };
+  // اختياري: تثبيت نسخة واتساب ويب إذا علق الربط عند التحميل. مثال: WA_WEB_VERSION=2.3000.1017054665-alpha
+  if(E.WA_WEB_VERSION)opts.webVersionCache={type:'remote',remotePath:'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/'+E.WA_WEB_VERSION+'.html'};
+  web=new lib.Client(opts);
   web.on('qr',q=>{
     lastQR=q;webReady=false;
-    console.log('QR_CODE_READY:',q);
-    console.log('\nامسح الباركود من واتساب: الأجهزة المرتبطة > ربط جهاز. الأسهل: افتح  /qr?key=مفتاحك  في المتصفح (WA_QR_KEY)\n');
-    if(qrt)qrt.generate(q,{small:true});
+    // لا نطبع نص الباركود في السجل (أي شخص يرى السجل يستطيع ربط رقمك). افتحه من صفحة /qr
+    console.log('\nظهر باركود جديد. افتح /qr?key=مفتاحك في المتصفح وامسحه من واتساب: الأجهزة المرتبطة > ربط جهاز\n');
+    if(qrt&&!E.RENDER)qrt.generate(q,{small:true}); // الطباعة في الشاشة فقط عند التشغيل على جهازك
   });
-  web.on('authenticated',()=>console.log('تم الربط، جاري التشغيل…'));
+  web.on('authenticated',()=>console.log('تم مسح الباركود (authenticated)، جاري تحميل المحادثات…'));
+  web.on('loading_screen',(pct,msg)=>console.log('تحميل واتساب:',pct+'%',msg||''));
+  web.on('change_state',st=>console.log('حالة واتساب:',st));
   web.on('auth_failure',m=>{webErr='فشل الربط: '+m;console.error(webErr);});
   web.on('ready',()=>{webReady=true;lastQR=null;webErr='';console.log('واتساب جاهز ✅ ويرسل رموز التحقق والإشعارات.');});
   web.on('disconnected',r=>{webReady=false;console.error('انقطع واتساب:',r,'— إعادة المحاولة بعد ٥ ثوانٍ');setTimeout(()=>web.destroy().catch(()=>{}).finally(boot),5000);});
@@ -64,7 +69,10 @@ function startWeb(){
       const from=String(m.from||'');
       if(m.fromMe||m.isStatus||from.endsWith('@g.us'))return;
       let num=from.split('@')[0];
-      if(from.endsWith('@lid')){const c=await m.getContact();if(c&&c.number)num=c.number;}
+      if(from.endsWith('@lid')){ // معرّف داخلي لواتساب: نحوله لرقم الجوال الحقيقي
+        try{const r=await web.getContactLidAndPhone([from]);if(r&&r[0]&&r[0].pn)num=String(r[0].pn).split('@')[0];}catch{}
+        if(num===from.split('@')[0]){try{const c=await m.getContact();if(c&&c.number)num=c.number;}catch{}}
+      }
       inbound(num,m.body||'');
     }catch(e){console.error(e.message);}
   });
@@ -74,7 +82,13 @@ function startWeb(){
 const sendText=(to,t)=>wa({to,type:'text',text:{body:t}});
 const sendTpl=(to,name,ps)=>wa({to,type:'template',template:{name,language:{code:'ar'},components:[{type:'body',parameters:ps.map(t=>({type:'text',text:String(t)}))}]}});
 // داخل نافذة ٢٤ ساعة من آخر رسالة للعميل: رسالة عادية (مجانية). خارجها: قالب معتمد (مدفوع).
-const notify=(to,msg,tpl,ps)=>(MODE==='web'||inWindow(to))?sendText(to,msg):sendTpl(to,tpl,ps);
+// حدود لحماية رقمك من الحظر ومن إساءة الاستخدام (قابلة للتعديل من البيئة)
+const caps={};
+const allow=(k,max,win)=>{const n=Date.now(),a=(caps[k]||[]).filter(t=>n-t<win);if(a.length>=max){caps[k]=a;return false;}a.push(n);caps[k]=a;return true;};
+const notify=(to,msg,tpl,ps)=>{
+  if(!allow('n:'+to,+E.NOTIFY_PER_NUMBER_HOUR||20,36e5)||!allow('n:*',+E.NOTIFY_GLOBAL_HOUR||300,36e5)){console.warn('تجاوز حد الإرسال، تم تجاهل رسالة إلى',to);return;}
+  return(MODE==='web'||inWindow(to))?sendText(to,msg):sendTpl(to,tpl,ps);
+};
 
 const STATUS={new:'وصل طلبك للمتجر',review:'بانتظار اعتماد الحوالة',prep:'تم تأكيد طلبك وجارٍ تجهيزه',ship:'تم شحن طلبك',done:'تم تسليم طلبك'};
 function inbound(from,txt){
@@ -91,7 +105,8 @@ const qrKeyOk=k=>{const a=Buffer.from(String(k||'')),b=Buffer.from(String(E.WA_Q
 const key=(s,i)=>s+':'+i;
 const routes={
   'GET /api/config':()=>({mock:MOCK,mode:MODE,platformPhone:C.platform}),
-  'POST /api/register/start':async b=>{
+  'POST /api/register/start':async(b,q,ctx)=>{
+    if(!allow('c:'+ctx.ip,10,600e3)||!allow('c:*',+E.CODE_GLOBAL_10MIN||30,600e3))return[429,{error:'طلبات كثيرة، جرّب بعد قليل.'}];
     const p=phone(b.phone);if(!/^(9677|9665)\d{8}$/.test(p))return[400,{error:'رقم غير صحيح، اكتب رقمًا يمنيًا أو سعوديًا'}];
     const now=Date.now();
     if(Object.values(db.regs).filter(r=>r.phone===p&&now-(r.t||0)<10*60e3).length>=3)return[429,{error:'طلبت رموزًا كثيرة، انتظر ١٠ دقائق ثم جرّب مرة ثانية.'}];
@@ -130,13 +145,19 @@ const routes={
     return{ok:true};
   },
   'POST /api/orders/status':b=>{
-    const o=db.orders[key(String(b.store),b.id)];if(!o)return[404,{error:'طلب غير معروف'}];
+    if(!STATUS[b.status])return[400,{error:'حالة غير صحيحة'}];
+    const k2=key(String(b.store),b.id);let o=db.orders[k2];
+    if(!o){ // السيرفر نسي الطلب (إعادة تشغيل/قرص مؤقت): نعيد بناءه مما أرسله الموقع
+      if(!b.buyerPhone)return[404,{error:'طلب غير معروف'}];
+      o=db.orders[k2]={store:String(b.store),id:b.id,storeName:String(b.storeName||''),buyer:phone(b.buyerPhone),status:b.status};
+    }
     o.status=b.status;save();const st=STATUS[o.status];
     if(st&&o.buyer)notify(o.buyer,`طلبك #${o.id} من ${o.storeName}: ${st}.`,C.tplStatus,[o.id,o.storeName,st]);
     return{ok:true};
   }
 };
 const body=req=>new Promise(r=>{let d='';req.on('data',c=>{d+=c;if(d.length>1e6)req.destroy();});req.on('end',()=>r(d));});
+const clientIp=req=>String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'';
 const hits={};setInterval(()=>{for(const k in hits)delete hits[k];},60e3);
 http.createServer(async(req,res)=>{
   const u=new URL(req.url,'http://x'),k=req.method+' '+u.pathname;
@@ -144,10 +165,11 @@ http.createServer(async(req,res)=>{
   try{
     if(k==='GET /'||k==='GET /index.html'){const f=['index.html','dukkan-demo.html'].map(n=>path.join(__dirname,n)).find(fs.existsSync);return f?out(200,fs.readFileSync(f),'text/html; charset=utf-8'):out(404,'ملف الموقع (index.html) غير موجود في المشروع','text/plain; charset=utf-8');}
     if(k==='GET /qr'||k==='GET /qr/data'){ // صفحة الباركود: محمية بمفتاح WA_QR_KEY لأن أي شخص يمسح الباركود يربط رقمك
-      if(!qrKeyOk(u.searchParams.get('key')))return out(403,'ممنوع. اضبط WA_QR_KEY (٨ أحرف فأكثر) وافتح /qr?key=…','text/plain; charset=utf-8');
+      const local=/^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress||'')&&!req.headers['x-forwarded-for'];
+      if(!local&&!qrKeyOk(u.searchParams.get('key')))return out(403,'ممنوع. اضبط WA_QR_KEY (٨ أحرف فأكثر) وافتح /qr?key=…','text/plain; charset=utf-8');
       return k==='GET /qr'?out(200,QR_HTML,'text/html; charset=utf-8'):out(200,{mode:MODE,ready:webReady,qr:lastQR,err:webErr});
     }
-    const ip=req.socket.remoteAddress;hits[ip]=(hits[ip]||0)+1;if(hits[ip]>120)return out(429,{error:'طلبات كثيرة'});
+    const ip=clientIp(req);hits[ip]=(hits[ip]||0)+1;if(hits[ip]>120)return out(429,{error:'طلبات كثيرة'});
     if(u.pathname==='/webhook'){
       if(req.method==='GET')return u.searchParams.get('hub.verify_token')===C.verify?out(200,u.searchParams.get('hub.challenge')||'','text/plain'):out(403,'forbidden','text/plain');
       const raw=await body(req);
@@ -158,11 +180,17 @@ http.createServer(async(req,res)=>{
       return;
     }
     const h=routes[k];if(!h)return out(404,{error:'غير موجود'});
-    const raw=req.method==='POST'?await body(req):'',r=await h(raw?JSON.parse(raw):{},u.searchParams);
+    const raw=req.method==='POST'?await body(req):'',r=await h(raw?JSON.parse(raw):{},u.searchParams,{ip});
     Array.isArray(r)?out(r[0],r[1]):out(200,r);
   }catch(e){console.error(e);out(500,{error:'خطأ في السيرفر'});}
 }).listen(PORT,'0.0.0.0',()=>{
   console.log(`دكّان يشتغل على http://localhost:${PORT}  ${{mock:'(وضع تجريبي: الرسائل تُطبع هنا ولا تُرسل)',web:'(واتساب بالباركود)',cloud:'(واتساب الرسمي Cloud API)'}[MODE]}`);
   if(MODE==='web')startWeb();
 });
-setInterval(()=>{let ch=false;for(const k in db.regs)if(db.regs[k].exp<Date.now()-36e5){delete db.regs[k];ch=true;}if(ch)save();},10*60e3).unref();
+setInterval(()=>{
+  let ch=false;
+  for(const k in db.regs)if(db.regs[k].exp<Date.now()-36e5){delete db.regs[k];ch=true;}
+  for(const k in db.seen)if(Date.now()-db.seen[k]>30*864e5){delete db.seen[k];ch=true;}
+  for(const k in caps){caps[k]=caps[k].filter(t=>Date.now()-t<36e5);if(!caps[k].length)delete caps[k];}
+  if(ch)save();
+},10*60e3).unref();
