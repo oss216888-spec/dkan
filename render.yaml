@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: dukkan-server
-    env: node
-    buildCommand: npm install && npx puppeteer browsers install chrome
-    startCommand: npm start
