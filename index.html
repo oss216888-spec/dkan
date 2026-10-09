@@ -6,9 +6,9 @@
     <title>تعديل صور المنتجات بالذكاء الاصطناعي</title>
     <!-- استخدام Tailwind CSS للتصميم -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- استدعاء مكتبة fal.ai الرسمية للـ Frontend بطريقة صحيحة -->
+    <!-- استدعاء مكتبة fal بالرابط الصحيح للـ Browser -->
     <script type="module">
-        import { fal } from "https://cdn.jsdelivr.net/npm/@fal-ai/client@latest/dist/index.js";
+        import { fal } from "https://esm.run/@fal-ai/client";
         window.fal = fal;
     </script>
 </head>
@@ -91,7 +91,7 @@
             submitBtn.disabled = true;
 
             try {
-                // ضبط المفتاح بشكل مباشر وصحيح لمكتبة fal
+                // ضبط المفتاح بشكل صحيح للـ Client
                 window.fal.config({
                     credentials: apiKey
                 });
